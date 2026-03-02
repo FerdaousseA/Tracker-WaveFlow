@@ -333,7 +333,7 @@ export default function ProjetDetailPage() {
             setProjet(prev => prev ? { ...prev, status: newStatus as any } : null);
             toast({ title: "Statut mis à jour" });
             if (profile?.id && projet?.name) {
-                const statusLabel = newStatus === 'active' ? 'En production' : newStatus === 'paused' ? 'En pause' : 'Clôturé';
+                const statusLabel = newStatus === 'active' ? 'En production' : newStatus === 'paused' ? 'En pause' : newStatus === 'completed' ? 'Terminé' : 'Archivé';
                 await notifyProjectMembers({ projectId: params.id as string, senderId: profile.id, type: 'info', title: '📋 Statut Projet Modifié', message: `Le projet "${projet.name}" est maintenant "${statusLabel}".`, link: `/projets/${params.id}` });
             }
         } catch (e: any) { toast({ title: "Erreur", description: e.message, variant: "destructive" }); }
@@ -385,9 +385,19 @@ export default function ProjetDetailPage() {
                                 )}
                                 <Badge className={cn("capitalize font-black text-[9px] px-3 py-1 rounded-full uppercase tracking-widest border-2",
                                     projet.status === 'active' ? "bg-primary/10 text-primary border-primary/20" :
-                                        projet.status === 'paused' ? "bg-orange-100 text-orange-600 border-orange-200" : "bg-green-100 text-green-600 border-green-200")}>
-                                    {projet.status === 'active' ? 'En production' : projet.status === 'paused' ? 'En pause' : 'Terminé'}
+                                        projet.status === 'paused' ? "bg-orange-100 text-orange-600 border-orange-200" :
+                                            projet.status === 'completed' ? "bg-green-100 text-green-600 border-green-200" :
+                                                "bg-slate-100 text-slate-600 border-slate-200")}>
+                                    {projet.status === 'active' ? 'En production' : projet.status === 'paused' ? 'En pause' : projet.status === 'completed' ? 'Terminé' : 'Archivé'}
                                 </Badge>
+                                {projet.deadline && (
+                                    <div className="flex items-center gap-2 text-slate-400 px-3 py-1 bg-white dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
+                                        <Clock className="w-3.5 h-3.5 text-blue-500" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">
+                                            Échéance : {new Date(projet.deadline).toLocaleDateString('fr-FR')}
+                                        </span>
+                                    </div>
+                                )}
                                 {userRole === 'owner' && !isAdminUser && (
                                     <Select value={projet.status} onValueChange={updateProjectStatus}>
                                         <SelectTrigger className="w-[160px] h-9 bg-slate-50 dark:bg-slate-800 border-none shadow-sm rounded-xl text-[10px] font-black uppercase tracking-widest">
@@ -396,7 +406,8 @@ export default function ProjetDetailPage() {
                                         <SelectContent className="rounded-xl">
                                             <SelectItem value="active" className="text-[10px] font-black uppercase tracking-widest">Production</SelectItem>
                                             <SelectItem value="paused" className="text-[10px] font-black uppercase tracking-widest">Mettre en pause</SelectItem>
-                                            <SelectItem value="archived" className="text-[10px] font-black uppercase tracking-widest">Clôturer</SelectItem>
+                                            <SelectItem value="completed" className="text-[10px] font-black uppercase tracking-widest">Terminer</SelectItem>
+                                            <SelectItem value="archived" className="text-[10px] font-black uppercase tracking-widest">Archiver</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 )}

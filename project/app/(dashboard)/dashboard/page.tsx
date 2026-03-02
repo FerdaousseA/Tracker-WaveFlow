@@ -8,14 +8,15 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import {
   format, startOfDay, endOfDay, subDays,
-  eachDayOfInterval, isSameDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth
+  eachDayOfInterval, isSameDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
+  subMonths, addMonths
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import {
   Play, Clock, Activity, CheckCircle2, Circle, Flame,
   Trophy, Target, LayoutGrid, Bell, StickyNote, TrendingUp,
-  User, Building2, CalendarDays, ChevronRight, Briefcase,
+  User, Building2, CalendarDays, ChevronRight, ChevronLeft, Briefcase,
   ListTodo, Timer, ArrowUpRight, Users
 } from 'lucide-react';
 import {
@@ -112,6 +113,7 @@ function DashboardMember() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState<'day' | 'week' | 'month'>('day');
+  const [customMonth, setCustomMonth] = useState<Date | null>(null);
   const today = new Date();
 
   const loadData = useCallback(async () => {
@@ -122,7 +124,10 @@ function DashboardMember() {
     let periodStart = startOfDay(today).toISOString();
     let periodEnd = endOfDay(today).toISOString();
 
-    if (dateFilter === 'week') {
+    if (customMonth) {
+      periodStart = startOfMonth(customMonth).toISOString();
+      periodEnd = endOfMonth(customMonth).toISOString();
+    } else if (dateFilter === 'week') {
       periodStart = startOfWeek(today, { weekStartsOn: 1 }).toISOString();
       periodEnd = endOfWeek(today, { weekStartsOn: 1 }).toISOString();
     } else if (dateFilter === 'month') {
@@ -206,18 +211,14 @@ function DashboardMember() {
 
         activeProjectsData = activeProjectMembers.map(pm => {
           const pTasks = (allProjectTasks || []).filter(t => t.project_id === pm.project_id);
-
           const periodTasks = pTasks.filter(t => {
             const d = new Date(t.created_at || new Date()).toISOString();
             const u = t.updated_at ? new Date(t.updated_at).toISOString() : d;
             return (d >= periodStart && d <= periodEnd) || (u >= periodStart && u <= periodEnd);
           });
-
           const pDone = periodTasks.filter(t => t.status === 'done').length;
           const progress = periodTasks.length > 0 ? Math.round((pDone / periodTasks.length) * 100) : 0;
-
           const pSecondsTotal = entries.filter(e => e.project_id === pm.project_id).reduce((sum, e) => sum + (e.duration_minutes || 0), 0);
-
           return {
             id: pm.project?.id,
             name: pm.project?.name,
@@ -260,7 +261,10 @@ function DashboardMember() {
       let days: Date[] = [];
       let formatStr = 'EEE';
 
-      if (dateFilter === 'day') {
+      if (customMonth) {
+        days = eachDayOfInterval({ start: startOfMonth(customMonth), end: endOfMonth(customMonth) });
+        formatStr = 'dd';
+      } else if (dateFilter === 'day') {
         days = [today];
         formatStr = 'dd MMM';
       } else if (dateFilter === 'month') {
@@ -349,7 +353,7 @@ function DashboardMember() {
     } finally {
       setLoading(false);
     }
-  }, [profile, dateFilter]);
+  }, [profile, dateFilter, customMonth]);
 
   useEffect(() => {
     if (profile) {
@@ -373,11 +377,37 @@ function DashboardMember() {
     );
   }
 
-  const periodLabel = dateFilter === 'day'
-    ? format(today, 'dd MMM yyyy', { locale: fr })
-    : dateFilter === 'week'
-      ? `${format(startOfWeek(today, { weekStartsOn: 1 }), 'dd MMM', { locale: fr })} - ${format(endOfWeek(today, { weekStartsOn: 1 }), 'dd MMM yyyy', { locale: fr })}`
-      : format(today, 'MMMM yyyy', { locale: fr });
+  const periodLabel = customMonth
+    ? format(customMonth, 'MMMM yyyy', { locale: fr })
+    : dateFilter === 'day'
+      ? format(today, 'dd MMM yyyy', { locale: fr })
+      : dateFilter === 'week'
+        ? `${format(startOfWeek(today, { weekStartsOn: 1 }), 'dd MMM', { locale: fr })} - ${format(endOfWeek(today, { weekStartsOn: 1 }), 'dd MMM yyyy', { locale: fr })}`
+        : format(today, 'MMMM yyyy', { locale: fr });
+
+  const isCurrentMonth = !customMonth || (
+    customMonth.getMonth() === today.getMonth() &&
+    customMonth.getFullYear() === today.getFullYear()
+  );
+
+  const handlePrevMonth = () => {
+    const base = customMonth || today;
+    setCustomMonth(subMonths(base, 1));
+    setDateFilter('month');
+  };
+
+  const handleNextMonth = () => {
+    const base = customMonth || today;
+    const next = addMonths(base, 1);
+    if (next > today) return;
+    setCustomMonth(next);
+    setDateFilter('month');
+  };
+
+  const handleFilterChange = (f: 'day' | 'week' | 'month') => {
+    setDateFilter(f);
+    setCustomMonth(null);
+  };
 
   return (
     <div className="min-h-screen bg-[#f4f5f7] dark:bg-slate-950">
@@ -394,15 +424,32 @@ function DashboardMember() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-full border border-slate-200 dark:border-slate-700">
-              <button onClick={() => setDateFilter('day')} className={cn("px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-colors", dateFilter === 'day' ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>Jour</button>
-              <button onClick={() => setDateFilter('week')} className={cn("px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-colors", dateFilter === 'week' ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>Semaine</button>
-              <button onClick={() => setDateFilter('month')} className={cn("px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-colors", dateFilter === 'month' ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>Mois</button>
+              <button onClick={() => handleFilterChange('day')} className={cn("px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-colors", !customMonth && dateFilter === 'day' ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>Jour</button>
+              <button onClick={() => handleFilterChange('week')} className={cn("px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-colors", !customMonth && dateFilter === 'week' ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>Semaine</button>
+              <button onClick={() => handleFilterChange('month')} className={cn("px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-colors", !customMonth && dateFilter === 'month' ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>Mois</button>
             </div>
-            <div className="hidden sm:flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 shadow-sm">
-              <CalendarDays className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{periodLabel}</span>
+
+            {/* ── Navigateur de mois ── */}
+            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-2 py-1 shadow-sm">
+              <button
+                onClick={handlePrevMonth}
+                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5 text-slate-500" />
+              </button>
+              <div className="flex items-center gap-1.5 px-1">
+                <CalendarDays className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-[110px] text-center">{periodLabel}</span>
+              </div>
+              <button
+                onClick={handleNextMonth}
+                disabled={isCurrentMonth}
+                className={cn("w-6 h-6 flex items-center justify-center rounded-full transition-colors", isCurrentMonth ? "opacity-30 cursor-not-allowed" : "hover:bg-slate-100 dark:hover:bg-slate-700")}
+              >
+                <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+              </button>
             </div>
 
             {data?.activeSession && (
@@ -431,7 +478,9 @@ function DashboardMember() {
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-700 dark:text-white">Temps Loggé</p>
-                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{dateFilter === 'day' ? 'Aujourd\'hui' : dateFilter === 'week' ? 'Cette semaine' : 'Ce mois'}</p>
+                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                  {customMonth ? format(customMonth, 'MMMM yyyy', { locale: fr }) : dateFilter === 'day' ? 'Aujourd\'hui' : dateFilter === 'week' ? 'Cette semaine' : 'Ce mois'}
+                </p>
               </div>
             </div>
             {data?.hoursThisWeek === '0s' ? (
@@ -444,7 +493,7 @@ function DashboardMember() {
                 <div className="flex items-end justify-between">
                   <span className="text-4xl font-black text-slate-800 dark:text-white">{data?.hoursThisWeek}</span>
                   <span className="text-xs font-semibold text-blue-500 flex items-center gap-0.5">
-                    <ArrowUpRight className="w-3 h-3" /> {dateFilter === 'day' ? 'Au total' : dateFilter === 'week' ? 'Cette sem.' : 'Ce mois'}
+                    <ArrowUpRight className="w-3 h-3" /> {customMonth ? format(customMonth, 'MMM', { locale: fr }) : dateFilter === 'day' ? 'Au total' : dateFilter === 'week' ? 'Cette sem.' : 'Ce mois'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
@@ -528,6 +577,7 @@ function DashboardMember() {
               </div>
             </div>
           </Card>
+
           <Card className="bg-white dark:bg-slate-800 border-0 shadow-sm rounded-2xl p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -608,24 +658,10 @@ function DashboardMember() {
             ) : (
               <div className="h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={data.projectBarData}
-                    margin={{ top: 5, right: 0, left: -20, bottom: 0 }}
-                    barCategoryGap="30%"
-                  >
+                  <BarChart data={data.projectBarData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }} barCategoryGap="30%">
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" className="dark:stroke-slate-700" />
-                    <XAxis
-                      dataKey="name"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
-                      dy={8}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
-                    />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} dy={8} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
                     <Tooltip content={<ProjectBarTooltip />} cursor={{ fill: 'rgba(241,245,249,0.6)' }} />
                     <Bar dataKey="hours" radius={[6, 6, 0, 0]}>
                       {data.projectBarData.map((entry, index) => (

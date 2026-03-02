@@ -99,9 +99,9 @@ export default function InscriptionPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[var(--gray-50)] to-white p-4">
       <div className="w-full max-w-5xl grid md:grid-cols-2 gap-8 items-center">
-        <div className="hidden md:block">
-          <div className="relative">
-            <div className="absolute inset-0 waveflow-gradient opacity-20 blur-3xl rounded-full"></div>
+        <div className="hidden md:block text-center flex-col items-center">
+          <div className="relative inline-flex items-center justify-center">
+            <div className="absolute inset-4 bg-blue-500/30 blur-[60px] rounded-full pointer-events-none"></div>
             <Image
               src="https://res.cloudinary.com/du3hl0zhl/image/upload/v1761043361/LOGO_WAVE_DIGITA_AGENCY_2025_rjyfg9.png"
               alt="Wave Digital Agency Logo"

@@ -43,7 +43,7 @@ export function ModalNouveauProjet({ open, onOpenChange, onProjetCree }: ModalNo
   const [nom, setNom] = useState('');
   const [couleur, setCouleur] = useState(COULEURS_PRESET[0]);
   const [deadline, setDeadline] = useState('');
-  const [status, setStatus] = useState<'active' | 'paused' | 'archived'>('active');
+  const [status, setStatus] = useState<'active' | 'paused' | 'archived' | 'completed'>('active');
   const [loading, setLoading] = useState(false);
   const { user, profile } = useAuth();
   const { toast } = useToast();
@@ -147,7 +147,7 @@ export function ModalNouveauProjet({ open, onOpenChange, onProjetCree }: ModalNo
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+        <form onSubmit={(e) => handleSubmit(e, true)} className="space-y-6 mt-4">
           <div className="space-y-2">
             <Label htmlFor="nom">Nom du projet *</Label>
             <Input
@@ -180,6 +180,7 @@ export function ModalNouveauProjet({ open, onOpenChange, onProjetCree }: ModalNo
               <SelectContent>
                 <SelectItem value="active">Actif</SelectItem>
                 <SelectItem value="paused">Pause</SelectItem>
+                <SelectItem value="completed">Terminé</SelectItem>
                 <SelectItem value="archived">Archivé</SelectItem>
               </SelectContent>
             </Select>
@@ -215,17 +216,9 @@ export function ModalNouveauProjet({ open, onOpenChange, onProjetCree }: ModalNo
             >
               Annuler
             </Button>
+
             <Button
               type="submit"
-              variant="secondary"
-              className="px-6"
-              disabled={loading}
-            >
-              {loading ? 'Création...' : 'Créer'}
-            </Button>
-            <Button
-              type="button"
-              onClick={(e) => handleSubmit(e, true)}
               className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
               disabled={loading}
             >

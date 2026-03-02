@@ -49,6 +49,7 @@ export function ModalEditProjet({ project, open, onOpenChange, onProjetMisAJour 
     const [clientId, setClientId] = useState<string>('none');
     const [status, setStatus] = useState<Project['status']>('active');
     const [couleur, setCouleur] = useState(COULEURS_PRESET[0]);
+    const [deadline, setDeadline] = useState('');
     const [assignedUsers, setAssignedUsers] = useState<string[]>([]);
 
     const [clients, setClients] = useState<Partial<Client>[]>([]);
@@ -64,6 +65,7 @@ export function ModalEditProjet({ project, open, onOpenChange, onProjetMisAJour 
             setClientId(project.client_id || 'none');
             setStatus(project.status);
             setCouleur(project.color);
+            setDeadline(project.deadline || '');
             setAssignedUsers(project.assigned_users || []);
             fetchClients();
             fetchProfiles();
@@ -148,6 +150,7 @@ export function ModalEditProjet({ project, open, onOpenChange, onProjetMisAJour 
                     client_id: clientId === 'none' ? null : clientId,
                     status,
                     color: couleur,
+                    deadline: deadline || null,
                     assigned_users: assignedUsers,
                     updated_at: new Date().toISOString(),
                 })
@@ -206,6 +209,7 @@ export function ModalEditProjet({ project, open, onOpenChange, onProjetMisAJour 
                                 <SelectContent>
                                     <SelectItem value="active">Actif</SelectItem>
                                     <SelectItem value="paused">En pause</SelectItem>
+                                    <SelectItem value="completed">Terminé</SelectItem>
                                     <SelectItem value="archived">Archivé</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -213,75 +217,14 @@ export function ModalEditProjet({ project, open, onOpenChange, onProjetMisAJour 
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="edit-client">Client</Label>
-                        <Select value={clientId} onValueChange={setClientId} disabled={loading}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Sélectionner un client" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="none">Aucun client</SelectItem>
-                                {clients.map((client) => (
-                                    <SelectItem key={client.id ?? 'none'} value={client.id ?? 'none'}>
-                                        {client.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Membres assignés</Label>
-                        <ScrollArea className="h-[120px] rounded-md border p-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                {profiles.map((p) => (
-                                    <div key={p.id ?? 'none'} className="flex items-center space-x-2">
-                                        <Checkbox
-                                            id={`user-${p.id ?? 'none'}`}
-                                            checked={assignedUsers.includes(p.id ?? '')}
-                                            onCheckedChange={() => handleUserToggle(p.id ?? '')}
-                                        />
-                                        <label
-                                            htmlFor={`user-${p.id ?? 'none'}`}
-                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                        >
-                                            {p.full_name}
-                                        </label>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </div>
-
-                    <div className="space-y-3">
-                        <Label>Gestion des Lots (Composants du Projet)</Label>
-                        <div className="flex gap-2">
-                            <Input
-                                placeholder="Nom du nouveau lot (ex: Phase 1)"
-                                value={newLotName}
-                                onChange={(e) => setNewLotName(e.target.value)}
-                            />
-                            <Button type="button" size="sm" onClick={handleAddLot}>Ajouter</Button>
-                        </div>
-                        <div className="border rounded-md divide-y max-h-[150px] overflow-y-auto">
-                            {lots.length === 0 ? (
-                                <div className="p-3 text-center text-xs text-muted-foreground italic">Aucun lot défini</div>
-                            ) : (
-                                lots.map((lot) => (
-                                    <div key={lot.id} className="p-2 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                                        <span className="text-sm">{lot.custom_name}</span>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6 text-red-500"
-                                            onClick={() => handleDeleteLot(lot.id)}
-                                        >
-                                            <Trash2 className="w-3 h-3" />
-                                        </Button>
-                                    </div>
-                                ))
-                            )}
-                        </div>
+                        <Label htmlFor="edit-deadline">Date d'échéance (optionnel)</Label>
+                        <Input
+                            id="edit-deadline"
+                            type="date"
+                            value={deadline}
+                            onChange={(e) => setDeadline(e.target.value)}
+                            disabled={loading}
+                        />
                     </div>
 
                     <div className="space-y-2">

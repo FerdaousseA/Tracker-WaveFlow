@@ -26,6 +26,7 @@ export default function ProjetsPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projets, setProjets] = useState<ProjectWithClient[]>([]);
+  const [showArchived, setShowArchived] = useState<'active' | 'paused' | 'archived' | 'completed'>('active');
   const [loading, setLoading] = useState(true);
 
   const chargerProjets = async () => {
@@ -52,14 +53,17 @@ export default function ProjetsPage() {
     chargerProjets();
   }, []);
 
-  const changerStatut = async (projectId: string, newStatus: 'active' | 'paused' | 'archived') => {
+  const changerStatut = async (projectId: string, newStatus: 'active' | 'paused' | 'archived' | 'completed') => {
     try {
       const { error } = await supabase
         .from('projects')
         .update({ status: newStatus })
         .eq('id', projectId);
 
-      if (error) throw error;
+      if (error) {
+        alert("Erreur base de données: " + error.message);
+        throw error;
+      }
       chargerProjets();
     } catch (error) {
       console.error('Erreur lors du changement de statut:', error);
@@ -84,6 +88,7 @@ export default function ProjetsPage() {
 
   const activeCount = projets.filter(p => p.status === 'active').length;
   const pausedCount = projets.filter(p => p.status === 'paused').length;
+  const completedCount = projets.filter(p => p.status === 'completed').length;
   const archivedCount = projets.filter(p => p.status === 'archived').length;
 
   const statusConfig = {
@@ -96,6 +101,11 @@ export default function ProjetsPage() {
       label: 'En pause',
       dot: 'bg-amber-400',
       badge: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30',
+    },
+    completed: {
+      label: 'Terminé',
+      dot: 'bg-green-400',
+      badge: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/30',
     },
     archived: {
       label: 'Archivé',
@@ -145,11 +155,40 @@ export default function ProjetsPage() {
           )}
         </div>
 
+        {/* ── Onglets Actifs / Pausés / Terminés / Archivés ── */}
+        <div className="flex items-center gap-2 p-1 bg-slate-200/50 dark:bg-slate-800/50 rounded-full w-fit flex-wrap">
+          <button
+            onClick={() => setShowArchived('active')}
+            className={cn("px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all", showArchived === 'active' ? "bg-white dark:bg-slate-700 text-blue-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
+          >
+            Projets Actifs
+          </button>
+          <button
+            onClick={() => setShowArchived('paused')}
+            className={cn("px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all", showArchived === 'paused' ? "bg-white dark:bg-slate-700 text-amber-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
+          >
+            Projets en Pause
+          </button>
+          <button
+            onClick={() => setShowArchived('completed')}
+            className={cn("px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all", showArchived === 'completed' ? "bg-white dark:bg-slate-700 text-green-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
+          >
+            Projets Terminés
+          </button>
+          <button
+            onClick={() => setShowArchived('archived')}
+            className={cn("px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all", showArchived === 'archived' ? "bg-white dark:bg-slate-700 text-slate-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
+          >
+            Projets Archivés
+          </button>
+        </div>
+
         {/* ── KPI Strip ── */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { label: 'En cours', value: activeCount, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', dot: 'bg-emerald-400' },
             { label: 'En pause', value: pausedCount, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', dot: 'bg-amber-400' },
+            { label: 'Terminés', value: completedCount, color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-900/20', dot: 'bg-green-400' },
             { label: 'Archivés', value: archivedCount, color: 'text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800', dot: 'bg-slate-300 dark:bg-slate-600' },
           ].map((stat, i) => (
             <div key={i} className="bg-white dark:bg-slate-800 border-0 shadow-sm rounded-2xl p-5 flex items-center gap-4">
@@ -165,7 +204,12 @@ export default function ProjetsPage() {
         </div>
 
         {/* ── Empty state ── */}
-        {projets.length === 0 ? (
+        {projets.filter(p => {
+          if (showArchived === 'completed') return p.status === 'completed';
+          if (showArchived === 'archived') return p.status === 'archived';
+          if (showArchived === 'paused') return p.status === 'paused';
+          return p.status === 'active';
+        }).length === 0 ? (
           <div className="bg-white dark:bg-slate-800 border-0 shadow-sm rounded-2xl flex flex-col items-center justify-center py-24 text-center">
             {/* Decorative rings */}
             <div className="relative mb-8">
@@ -191,7 +235,12 @@ export default function ProjetsPage() {
         ) : (
           /* ── Project Grid ── */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {projets.map((projet) => {
+            {projets.filter(p => {
+              if (showArchived === 'completed') return p.status === 'completed';
+              if (showArchived === 'archived') return p.status === 'archived';
+              if (showArchived === 'paused') return p.status === 'paused';
+              return p.status === 'active';
+            }).map((projet) => {
               const cfg = statusConfig[projet.status as keyof typeof statusConfig] || statusConfig.active;
               return (
                 <div
@@ -262,7 +311,7 @@ export default function ProjetsPage() {
                     {/* Actions footer */}
                     <div className="flex items-center justify-between gap-1 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
                       {/* Status actions */}
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 flex-wrap">
                         {projet.status === 'active' ? (
                           <button
                             onClick={() => changerStatut(projet.id, 'paused')}
@@ -291,6 +340,16 @@ export default function ProjetsPage() {
                           >
                             <Archive className="w-3 h-3" />
                             Archiver
+                          </button>
+                        )}
+
+                        {projet.status !== 'completed' && (
+                          <button
+                            onClick={() => changerStatut(projet.id, 'completed')}
+                            disabled={profile?.role !== 'chef_de_projet'}
+                            className="flex items-center gap-1 h-7 px-2.5 rounded-lg text-[9px] font-bold uppercase tracking-wider text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Terminer
                           </button>
                         )}
                       </div>

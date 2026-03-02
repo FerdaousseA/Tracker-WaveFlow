@@ -1,6 +1,6 @@
 export type UserRole = 'chef_de_projet' | 'admin' | 'member';
 
-export type ProjectStatus = 'active' | 'paused' | 'archived';
+export type ProjectStatus = 'active' | 'paused' | 'archived' | 'completed';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 
