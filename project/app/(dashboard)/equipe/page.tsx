@@ -214,9 +214,6 @@ export default function EquipePage() {
                       {membre.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || membre.email.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <Badge variant={membre.status === 'active' ? 'success' : 'secondary'} className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest border-none shadow-sm">
-                    {membre.status === 'active' ? 'Actif' : 'Inactif'}
-                  </Badge>
                 </div>
 
                 <div>
@@ -239,18 +236,7 @@ export default function EquipePage() {
               </div>
 
               {profile.role === 'chef_de_projet' && (
-                <div className="flex items-center gap-2 mt-6 pt-4 border-t border-slate-50 dark:border-slate-800/50">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => membre.status === 'active' ? handleDesactiver(membre) : handleActiver(membre)}
-                    className={cn(
-                      "flex-1 h-9 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors",
-                      membre.status === 'active' ? "bg-amber-50 text-amber-600 hover:bg-amber-100" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                    )}
-                  >
-                    {membre.status === 'active' ? 'Désactiver' : 'Réactiver'}
-                  </Button>
+                <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-slate-50 dark:border-slate-800/50">
                   <Button
                     variant="ghost"
                     size="icon"

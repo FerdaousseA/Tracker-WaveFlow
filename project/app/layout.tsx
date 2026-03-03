@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/contexts/theme-context';
 import { TimerProvider } from '@/contexts/timer-context';
 import { Toaster } from '@/components/ui/toaster';
 import { FloatingTimer } from '@/components/tracker/floating-timer';
+import WelcomeOverlayHost from '@/components/welcome/WelcomeOverlayHost';  // ← changé
 
 export const metadata: Metadata = {
   title: 'WaveFlow - Time Tracking Wave Digital Agency',
@@ -23,6 +24,7 @@ export default function RootLayout({
           <AuthProvider>
             <TimerProvider>
               {children}
+              <WelcomeOverlayHost />  {/* ← changé */}
               <FloatingTimer />
               <Toaster />
             </TimerProvider>

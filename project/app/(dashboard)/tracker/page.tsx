@@ -742,11 +742,6 @@ export default function TrackerPage() {
                 {currentEntry?.lot_task?.name || currentEntry?.project?.name || 'Session'}
               </p>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notes (optionnel)</label>
-              <Textarea placeholder="Décrivez ce que vous avez accompli..." value={notes}
-                onChange={(e) => setNotes(e.target.value)} rows={3} className="resize-none rounded-xl" />
-            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setShowStopModal(false)}>Annuler</Button>

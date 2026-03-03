@@ -11,7 +11,10 @@ import {
     CheckSquare,
     Medal,
     Trophy,
-    TrendingUp
+    TrendingUp,
+    ChevronLeft,
+    ChevronRight,
+    CalendarDays
 } from 'lucide-react';
 import {
     BarChart,
@@ -28,7 +31,8 @@ import {
     Pie,
     Label
 } from 'recharts';
-import { format, subDays, startOfMonth, startOfWeek, startOfDay, endOfDay, eachDayOfInterval, isSameDay, isWithinInterval } from 'date-fns';
+import { format, subDays, startOfMonth, endOfMonth, startOfWeek, startOfDay, endOfDay, eachDayOfInterval, isSameDay, isWithinInterval, subMonths, addMonths } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -84,14 +88,24 @@ const HoursTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
-type FilterKey = 'today' | 'week' | 'month';
+type FilterKey = 'today' | 'week' | 'month' | 'prev_month' | 'next_month';
 
 const getDateRange = (filter: FilterKey): { start: Date; end: Date } => {
     const now = new Date();
     if (filter === 'today') return { start: startOfDay(now), end: endOfDay(now) };
     if (filter === 'week') return { start: startOfWeek(now, { weekStartsOn: 1 }), end: now };
+    if (filter === 'prev_month') {
+        const startOfPrev = startOfMonth(subMonths(now, 1));
+        const endOfPrev = endOfMonth(subMonths(now, 1));
+        return { start: startOfPrev, end: endOfPrev };
+    }
+    if (filter === 'next_month') {
+        const startOfNext = startOfMonth(addMonths(now, 1));
+        const endOfNext = endOfMonth(addMonths(now, 1));
+        return { start: startOfNext, end: endOfNext };
+    }
     // month
-    return { start: startOfMonth(now), end: now };
+    return { start: startOfMonth(now), end: endOfMonth(now) }; // Use endOfMonth to be consistent for a full month's view
 };
 
 export default function StatistiquesPage() {
@@ -302,9 +316,11 @@ export default function StatistiquesPage() {
     }
 
     const filterLabels: Record<FilterKey, string> = {
+        prev_month: 'Mois précédent',
         today: "Aujourd'hui",
         week: 'Cette semaine',
         month: 'Ce mois',
+        next_month: 'Mois suivant'
     };
 
     return (
@@ -317,22 +333,40 @@ export default function StatistiquesPage() {
                     <p className="section-subtitle">Analyses approfondies globales de toute l'application.</p>
                 </div>
 
-                {/* Pill toggle filter */}
-                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-                    {(['today', 'week', 'month'] as FilterKey[]).map(f => (
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-full border border-slate-200 dark:border-slate-700">
+                        <button onClick={() => handleFilterChange('today')} className={cn("px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-colors", activeFilter === 'today' ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>Jour</button>
+                        <button onClick={() => handleFilterChange('week')} className={cn("px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-colors", activeFilter === 'week' ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>Semaine</button>
+                        <button onClick={() => handleFilterChange('month')} className={cn("px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-colors", activeFilter === 'month' ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>Mois</button>
+                    </div>
+
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-2 py-1 shadow-sm">
                         <button
-                            key={f}
-                            onClick={() => handleFilterChange(f)}
-                            className={cn(
-                                "px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all",
-                                activeFilter === f
-                                    ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-                                    : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                            )}
+                            onClick={() => handleFilterChange('prev_month')}
+                            className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                         >
-                            {filterLabels[f]}
+                            <ChevronLeft className="w-3.5 h-3.5 text-slate-500" />
                         </button>
-                    ))}
+                        <div className="flex items-center gap-1.5 px-1">
+                            <CalendarDays className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-[110px] text-center">
+                                {activeFilter === 'prev_month' || activeFilter === 'next_month'
+                                    ? format(dateFilter.start, 'MMMM yyyy', { locale: fr })
+                                    : activeFilter === 'today'
+                                        ? format(dateFilter.start, 'dd MMM yyyy', { locale: fr })
+                                        : activeFilter === 'week'
+                                            ? `${format(dateFilter.start, 'dd MMM', { locale: fr })} - ${format(dateFilter.end, 'dd MMM yyyy', { locale: fr })}`
+                                            : format(dateFilter.start, 'MMMM yyyy', { locale: fr })}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => handleFilterChange('next_month')}
+                            disabled={isSameDay(startOfMonth(new Date()), startOfMonth(dateFilter.start))}
+                            className={cn("w-6 h-6 flex items-center justify-center rounded-full transition-colors", isSameDay(startOfMonth(new Date()), startOfMonth(dateFilter.start)) ? "opacity-30 cursor-not-allowed" : "hover:bg-slate-100 dark:hover:bg-slate-700")}
+                        >
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                        </button>
+                    </div>
                 </div>
             </div>
 

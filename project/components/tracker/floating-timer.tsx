@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useTimerContext } from '@/contexts/timer-context';
 import { Square, Clock, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import FocusTimer3DDynamic from '@/components/focus/FocusTimer3D.dynamic';
 
 // ── Web Notification manager ──────────────────────────────────────────────────
 // Keeps a persistent notification open while timer is active.
@@ -94,7 +95,8 @@ function startNotification(taskName: string, projectName: string, startMs: numbe
 // ── Widget UI ─────────────────────────────────────────────────────────────────
 
 function TimerWidget() {
-    const { activeSession, currentEntry, liveSeconds, stopTimer } = useTimerContext();
+    const { activeSession, currentEntry, liveSeconds, stopTimer, isPaused } = useTimerContext();
+    const [isHovered, setIsHovered] = useState(false);
 
     // Start/stop notification when session changes
     useEffect(() => {
@@ -134,40 +136,49 @@ function TimerWidget() {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-[99999]">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-4 min-w-[280px] flex items-center gap-4 hover:scale-[1.02] transition-all">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <Clock className="w-6 h-6 animate-pulse" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Session Active</span>
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                    </div>
-                    <div className="text-xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
+        <div
+            className="fixed bottom-6 right-6 z-[99999] flex flex-col items-end gap-1"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            <FocusTimer3DDynamic status={isPaused ? 'paused' : activeSession ? 'running' : 'stopped'} isHovered={isHovered} />
+            <div
+                className="backdrop-blur-sm rounded-lg shadow-sm border px-3 py-1 flex items-center gap-2.5 hover:scale-[1.01] transition-all duration-150 h-[42px]"
+                style={{
+                    backgroundColor: 'rgba(56, 189, 248, 0.10)',
+                    borderColor: 'rgba(56, 189, 248, 0.28)'
+                }}
+            >
+                <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#38bdf8]" />
+                    <div className="text-[13px] font-semibold text-[#38bdf8] tabular-nums tracking-wide">
                         {formatTime(liveSeconds)}
                     </div>
-                    <div className="text-[10px] font-bold text-slate-500 truncate max-w-[160px]">
-                        {currentEntry?.lot_task?.name || currentEntry?.project?.name || 'Chargement...'}
-                        {currentEntry?.lot?.custom_name && ` / ${currentEntry.lot.custom_name}`}
-                    </div>
                 </div>
 
-                <div className="flex flex-col gap-2 border-l border-slate-100 dark:border-slate-800 pl-3">
+                <div className="h-4 w-[1px] bg-[#38bdf8]/20" />
+
+                <div className="flex items-center gap-2 max-w-[140px]">
+                    <span className="text-[11px] font-medium text-[#38bdf8]/80 truncate">
+                        {currentEntry?.lot_task?.name || currentEntry?.project?.name || '...'}
+                    </span>
+                    {!isPaused && <div className="w-1 h-1 rounded-full bg-[#38bdf8] animate-pulse" />}
+                </div>
+
+                <div className="flex items-center gap-1.5 ml-1">
                     <button
                         onClick={() => { stopTimer(); stopNotification(); }}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        className="w-7 h-7 rounded-md flex items-center justify-center bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-150"
                         title="Arrêter"
                     >
-                        <Square className="w-4 h-4 fill-current" />
+                        <Square className="w-3 h-3 fill-current" />
                     </button>
                     <Link href="/tracker">
                         <button
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                            className="w-7 h-7 rounded-md flex items-center justify-center bg-[#38bdf8] text-white hover:bg-[#0ea5e9] transition-all duration-150"
                             title="Ouvrir Tracker"
                         >
-                            <ExternalLink className="w-4 h-4" />
+                            <ExternalLink className="w-3.5 h-3.5" />
                         </button>
                     </Link>
                 </div>
